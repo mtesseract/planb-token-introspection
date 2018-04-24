@@ -4,6 +4,7 @@ module Network.PlanB.Introspection.Internal.Test
   ( planBTokenIntrospectionTests
   ) where
 
+import           Data.ByteString                  (ByteString)
 import qualified Data.ByteString.Lazy             as ByteString.Lazy
 import qualified Data.Text.Encoding               as Text
 import           Network.HTTP.Client.Internal
@@ -52,3 +53,9 @@ testIntrospectToken = do
     _info <- introspectToken conf token
     pure ()
   1 @=? length (_testStateHttpRequests testState')
+
+_printTokenInfo :: ByteString -> IO ()
+_printTokenInfo token = do
+  conf <- newConfIO "https://planb-endpoint"
+  tokenInfo <- introspectToken conf token
+  print tokenInfo
