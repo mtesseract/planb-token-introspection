@@ -8,7 +8,17 @@ This package provides token introspection functionality for
 ```haskell
 printTokenInfo :: ByteString -> IO ()
 printTokenInfo token = do
-  conf <- newConfIO "https://planb-endpoint"
-  tokenInfo <- introspectToken conf token
+  introspector <- PlanB.new "https://planb-endpoint"
+  tokenInfo <- PlanB.introspectToken introspector token
   print tokenInfo
 ```
+
+If the PlanB introspection endpoint to use can be retrieved from the
+environment variable `PLANB_INTROSPECTION_ENDPOINT`, then one can
+alternatively use
+
+```haskell
+  introspector <- PlanB.newFromEnv
+```
+
+for creating the PlanB introspector.

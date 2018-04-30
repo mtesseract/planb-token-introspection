@@ -17,6 +17,9 @@ import           Network.HTTP.Client
 
 type LazyByteString = ByteString.Lazy.ByteString
 
+data TokenIntrospector m =
+  TokenIntrospector { introspectToken :: ByteString -> m TokenInfo }
+
 data TokenInfo =
   TokenInfo { tokenInfoExpiresIn :: Int
             , tokenInfoScope     :: Set Text
@@ -26,9 +29,22 @@ data TokenInfo =
 
 $(deriveJSON (aesonDrop (length ("tokenInfo" :: String)) snakeCase) ''TokenInfo)
 
+data BackendConfHttp m = BackendConfHttp
+  { httpRequestExecute :: Request -> m (Response LazyByteString)
+  }
+
+data BackendConfEnv m = BackendConfEnv
+  { envLookup :: Text -> m (Maybe Text)
+  }
+
+data BackendConf m = BackendConf
+  { backendConfHttp :: BackendConfHttp m
+  , backendConfEnv  :: BackendConfEnv m
+  }
+
 data Conf m = Conf
   { confIntrospectionRequest :: Request
-  , confHttpRequestExecute   :: Request -> m (Response LazyByteString) }
+  , confBackend              :: BackendConf m }
 
 -- | Type for RFC7807 @Problem@ objects.
 data PlanBError = PlanBError
@@ -42,6 +58,7 @@ $(deriveJSON (aesonDrop (length ("oauth2" :: String)) snakeCase) ''PlanBError)
 
 data PlanBIntrospectionException = PlanBIntrospectionDeserialization Text ByteString
                                  | PlanBIntrospectionError PlanBError
+                                 | PlanBIntrospectionEndpointMissing
   deriving (Typeable, Show)
 
 instance Exception PlanBIntrospectionException

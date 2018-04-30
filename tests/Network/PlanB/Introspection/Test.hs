@@ -20,6 +20,9 @@ import           Control.Monad.Reader
 import           Control.Monad.State
 import qualified Data.ByteString.Lazy                       as ByteString.Lazy
 import           Data.IORef
+import           Data.Map                                   (Map)
+import qualified Data.Map                                   as Map
+import           Data.Text                                  (Text)
 import           Network.HTTP.Client
 
 import           Network.PlanB.Introspection.Internal
@@ -56,6 +59,7 @@ instance MonadUnliftIO TestStack where
 data TestState =
   TestState { _testStateHttpRequests :: [Request]
             , _testStateHttpResponse :: Maybe (Response ByteString.Lazy.ByteString)
+            , _testStateEnvironment  :: Map Text Text
             }
 
 makeFieldsNoPrefix ''TestState
@@ -78,5 +82,25 @@ mockHttpRequestExecute request = do
     Nothing ->
       error "FIXME"
 
-makeTestConf :: TestStack (Conf TestStack)
-makeTestConf = newConf mockHttpRequestExecute "https://localhost"
+mockHttpBackend :: BackendConfHttp TestStack
+mockHttpBackend =
+  BackendConfHttp { httpRequestExecute = mockHttpRequestExecute }
+
+mockEnvBackend :: BackendConfEnv TestStack
+mockEnvBackend =
+  BackendConfEnv { envLookup = mockEnvLookup }
+
+mockEnvLookup :: Text -> TestStack (Maybe Text)
+mockEnvLookup name = do
+  environment <- gets (view testStateEnvironment)
+  pure $ Map.lookup name environment
+
+mockBackend :: BackendConf TestStack
+mockBackend = BackendConf
+  { backendConfHttp = mockHttpBackend
+  , backendConfEnv = mockEnvBackend
+  }
+
+makeTestIntrospector :: TestStack (TokenIntrospector TestStack)
+makeTestIntrospector =
+  newCustom mockBackend "https://localhost"

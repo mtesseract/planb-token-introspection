@@ -6,6 +6,7 @@ module Network.PlanB.Introspection.Internal.Test
 
 import           Data.ByteString                  (ByteString)
 import qualified Data.ByteString.Lazy             as ByteString.Lazy
+import qualified Data.Map                         as Map
 import qualified Data.Text.Encoding               as Text
 import           Network.HTTP.Client.Internal
 import           Network.HTTP.Types
@@ -13,6 +14,7 @@ import           Test.Tasty
 import           Test.Tasty.HUnit
 
 import           Network.PlanB.Introspection
+import qualified Network.PlanB.Introspection      as PlanB
 import           Network.PlanB.Introspection.Test
 
 
@@ -46,16 +48,17 @@ testIntrospectToken = do
       testState = TestState
                   { _testStateHttpResponse = Just response
                   , _testStateHttpRequests = []
+                  , _testStateEnvironment = Map.empty
                   }
       token = "some-token"
   (_, testState') <- runTestStack testState $ do
-    conf <- makeTestConf
-    _info <- introspectToken conf token
+    introspector <- makeTestIntrospector
+    _info <- introspectToken introspector token
     pure ()
   1 @=? length (_testStateHttpRequests testState')
 
 _printTokenInfo :: ByteString -> IO ()
 _printTokenInfo token = do
-  conf <- newConfIO "https://planb-endpoint"
-  tokenInfo <- introspectToken conf token
+  introspector <- PlanB.new "https://planb-endpoint"
+  tokenInfo <- PlanB.introspectToken introspector token
   print tokenInfo

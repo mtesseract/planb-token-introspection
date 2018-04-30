@@ -1,15 +1,18 @@
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Network.PlanB.Introspection.Internal
   ( TokenInfo(..)
   , Conf
   , PlanBIntrospectionException
-  , newConf
-  , newConfIO
+  , new
+  , newFromEnv
+  , newCustom
   , httpRequestExecuteIO
   , introspectToken
   ) where
 
+import           Control.Arrow
 import           Control.Exception.Safe
 import           Control.Monad
 import           Control.Monad.IO.Class
@@ -23,28 +26,65 @@ import qualified Data.Text                                  as Text
 import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
 import           Network.HTTP.Types
+import qualified System.Environment                         as Env
 
 import           Network.PlanB.Introspection.Internal.Types
 
+new :: (MonadThrow m, MonadIO m)
+    => Text
+    -> m (TokenIntrospector m)
+new endpoint = do
+  conf <- newConf backendConfIO endpoint
+  pure $ TokenIntrospector { introspectToken = introspectTokenImpl conf }
+
+backendConfIO :: MonadIO m => BackendConf m
+backendConfIO =
+  BackendConf { backendConfHttp = httpBackendIO
+              , backendConfEnv  = envBackendIO }
+
+envBackendIO :: MonadIO m => BackendConfEnv m
+envBackendIO =
+  BackendConfEnv { envLookup = envLookupIO }
+
+envLookupIO :: MonadIO m => Text -> m (Maybe Text)
+envLookupIO =
+  Text.unpack
+  >>> Env.lookupEnv
+  >>> fmap (fmap Text.pack)
+  >>> liftIO
+
+httpBackendIO :: MonadIO m => BackendConfHttp m
+httpBackendIO =
+  BackendConfHttp { httpRequestExecute = httpRequestExecuteIO Nothing }
+
+newFromEnv :: (MonadThrow m, MonadIO m)
+           => m (TokenIntrospector m)
+newFromEnv = do
+  let backend    = backendConfIO
+      backendEnv = backendConfEnv backend
+  endpoint <- envLookup backendEnv "PLANB_INTROSPECTION_ENDPOINT" >>= \ case
+    Just ep -> pure ep
+    Nothing -> throwM PlanBIntrospectionEndpointMissing
+  newCustom backend endpoint
+
+newCustom
+  :: (MonadThrow m, MonadIO m)
+  => BackendConf m
+  -> Text
+  -> m (TokenIntrospector m)
+newCustom backendConf introspectionEndpoint = do
+  conf <- newConf backendConf introspectionEndpoint
+  pure $ TokenIntrospector { introspectToken = introspectTokenImpl conf }
+
 newConf
   :: MonadThrow m
-  => (Request -> m (Response LazyByteString))
+  => BackendConf m
   -> Text
   -> m (Conf m)
-newConf httpRequestExecute introspectionEndpoint = do
+newConf backendConf introspectionEndpoint = do
   introspectionRequest <- parseRequest introspectionEndpointStr
   pure Conf { confIntrospectionRequest = introspectionRequest
-            , confHttpRequestExecute   = httpRequestExecute }
-  where introspectionEndpointStr = Text.unpack introspectionEndpoint
-
-newConfIO
-  :: (MonadThrow m, MonadIO m)
-  => Text
-  -> m (Conf m)
-newConfIO introspectionEndpoint = do
-  introspectionRequest <- parseRequest introspectionEndpointStr
-  pure Conf { confIntrospectionRequest = introspectionRequest
-            , confHttpRequestExecute   = httpRequestExecuteIO Nothing }
+            , confBackend              = backendConf }
   where introspectionEndpointStr = Text.unpack introspectionEndpoint
 
 httpRequestExecuteIO
@@ -57,18 +97,21 @@ httpRequestExecuteIO maybeManager request = do
   manager <- maybe (liftIO getGlobalManager) pure maybeManager
   liftIO $ httpLbs request manager
 
-introspectToken
+introspectTokenImpl
   :: MonadThrow m
   => Conf m
   -> ByteString
   -> m TokenInfo
-introspectToken conf token = do
+introspectTokenImpl conf token = do
   let endpoint    = confIntrospectionRequest conf
       bearerToken = "Bearer " <> token
       request     = endpoint { method         = "GET"
                              , path           = "/oauth2/tokeninfo"
                              , requestHeaders = [("Authorization", bearerToken)] }
-  response <- confHttpRequestExecute conf request
+      httpBackend = conf
+                    & confBackend
+                    & backendConfHttp
+  response <- httpRequestExecute httpBackend request
   let body = responseBody response & ByteString.Lazy.toStrict
 
   when (statusCode (responseStatus response) /= 200) $

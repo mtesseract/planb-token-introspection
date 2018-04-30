@@ -2,8 +2,9 @@ module Network.PlanB.Introspection
   ( TokenInfo(..)
   , Conf
   , PlanBIntrospectionException
-  , newConf
-  , newConfIO
+  , new
+  , newFromEnv
+  , newCustom
   , httpRequestExecuteIO
   , introspectToken
   ) where
