@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 
 module Network.PlanB.Introspection.Internal
   ( TokenInfo(..)
@@ -30,21 +31,21 @@ import qualified System.Environment                         as Env
 
 import           Network.PlanB.Introspection.Internal.Types
 
+-- | Create a new PlanB introspector using the provided endpoint.
 new :: (MonadThrow m, MonadIO m)
     => Text
     -> m (TokenIntrospector m)
 new endpoint = do
-  conf <- newConf backendConfIO endpoint
+  conf <- newConf backendIO endpoint
   pure $ TokenIntrospector { introspectToken = introspectTokenImpl conf }
+backendIO :: MonadIO m => Backend m
+backendIO =
+  Backend { backendHttp = httpBackendIO
+          , backendEnv  = envBackendIO }
 
-backendConfIO :: MonadIO m => BackendConf m
-backendConfIO =
-  BackendConf { backendConfHttp = httpBackendIO
-              , backendConfEnv  = envBackendIO }
-
-envBackendIO :: MonadIO m => BackendConfEnv m
+envBackendIO :: MonadIO m => BackendEnv m
 envBackendIO =
-  BackendConfEnv { envLookup = envLookupIO }
+  BackendEnv { envLookup = envLookupIO }
 
 envLookupIO :: MonadIO m => Text -> m (Maybe Text)
 envLookupIO =
@@ -53,38 +54,38 @@ envLookupIO =
   >>> fmap (fmap Text.pack)
   >>> liftIO
 
-httpBackendIO :: MonadIO m => BackendConfHttp m
+httpBackendIO :: MonadIO m => BackendHttp m
 httpBackendIO =
-  BackendConfHttp { httpRequestExecute = httpRequestExecuteIO Nothing }
+  BackendHttp { httpRequestExecute = httpRequestExecuteIO Nothing }
 
 newFromEnv :: (MonadThrow m, MonadIO m)
            => m (TokenIntrospector m)
 newFromEnv = do
-  let backend    = backendConfIO
-      backendEnv = backendConfEnv backend
-  endpoint <- envLookup backendEnv "PLANB_INTROSPECTION_ENDPOINT" >>= \ case
+  let backend    = backendIO
+      BackendEnv { .. } = backendEnv backend
+  endpoint <- envLookup "PLANB_INTROSPECTION_ENDPOINT" >>= \ case
     Just ep -> pure ep
     Nothing -> throwM PlanBIntrospectionEndpointMissing
   newCustom backend endpoint
 
 newCustom
   :: (MonadThrow m, MonadIO m)
-  => BackendConf m
+  => Backend m
   -> Text
   -> m (TokenIntrospector m)
-newCustom backendConf introspectionEndpoint = do
-  conf <- newConf backendConf introspectionEndpoint
+newCustom backend introspectionEndpoint = do
+  conf <- newConf backend introspectionEndpoint
   pure $ TokenIntrospector { introspectToken = introspectTokenImpl conf }
 
 newConf
   :: MonadThrow m
-  => BackendConf m
+  => Backend m
   -> Text
   -> m (Conf m)
-newConf backendConf introspectionEndpoint = do
+newConf backend introspectionEndpoint = do
   introspectionRequest <- parseRequest introspectionEndpointStr
   pure Conf { confIntrospectionRequest = introspectionRequest
-            , confBackend              = backendConf }
+            , confBackend              = backend }
   where introspectionEndpointStr = Text.unpack introspectionEndpoint
 
 httpRequestExecuteIO
@@ -110,7 +111,7 @@ introspectTokenImpl conf token = do
                              , requestHeaders = [("Authorization", bearerToken)] }
       httpBackend = conf
                     & confBackend
-                    & backendConfHttp
+                    & backendHttp
   response <- httpRequestExecute httpBackend request
   let body = responseBody response & ByteString.Lazy.toStrict
 

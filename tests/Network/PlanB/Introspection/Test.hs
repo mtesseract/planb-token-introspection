@@ -82,23 +82,23 @@ mockHttpRequestExecute request = do
     Nothing ->
       error "FIXME"
 
-mockHttpBackend :: BackendConfHttp TestStack
+mockHttpBackend :: BackendHttp TestStack
 mockHttpBackend =
-  BackendConfHttp { httpRequestExecute = mockHttpRequestExecute }
+  BackendHttp { httpRequestExecute = mockHttpRequestExecute }
 
-mockEnvBackend :: BackendConfEnv TestStack
+mockEnvBackend :: BackendEnv TestStack
 mockEnvBackend =
-  BackendConfEnv { envLookup = mockEnvLookup }
+  BackendEnv { envLookup = mockEnvLookup }
 
 mockEnvLookup :: Text -> TestStack (Maybe Text)
 mockEnvLookup name = do
   environment <- gets (view testStateEnvironment)
   pure $ Map.lookup name environment
 
-mockBackend :: BackendConf TestStack
-mockBackend = BackendConf
-  { backendConfHttp = mockHttpBackend
-  , backendConfEnv = mockEnvBackend
+mockBackend :: Backend TestStack
+mockBackend = Backend
+  { backendHttp = mockHttpBackend
+  , backendEnv = mockEnvBackend
   }
 
 makeTestIntrospector :: TestStack (TokenIntrospector TestStack)

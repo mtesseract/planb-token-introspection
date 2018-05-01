@@ -29,22 +29,22 @@ data TokenInfo =
 
 $(deriveJSON (aesonDrop (length ("tokenInfo" :: String)) snakeCase) ''TokenInfo)
 
-data BackendConfHttp m = BackendConfHttp
+data BackendHttp m = BackendHttp
   { httpRequestExecute :: Request -> m (Response LazyByteString)
   }
 
-data BackendConfEnv m = BackendConfEnv
+data BackendEnv m = BackendEnv
   { envLookup :: Text -> m (Maybe Text)
   }
 
-data BackendConf m = BackendConf
-  { backendConfHttp :: BackendConfHttp m
-  , backendConfEnv  :: BackendConfEnv m
+data Backend m = Backend
+  { backendHttp :: BackendHttp m
+  , backendEnv  :: BackendEnv m
   }
 
 data Conf m = Conf
   { confIntrospectionRequest :: Request
-  , confBackend              :: BackendConf m }
+  , confBackend              :: Backend m }
 
 -- | Type for RFC7807 @Problem@ objects.
 data PlanBError = PlanBError

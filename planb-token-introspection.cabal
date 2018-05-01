@@ -1,14 +1,15 @@
 name:                planb-token-introspection
 version:             0.1.0.0
 synopsis:            Token Introspection for PlanB
--- description:
+description:         This package provides token introspection functionality
+                     for the PlanB token provider.
 homepage:            https://github.com/mtesseract/planb-token-introspection#readme
 license:             BSD3
 license-file:        LICENSE
 author:              Moritz Clasmeier
 maintainer:          mtesseract@silverratio.net
 copyright:           (c) 2018 Moritz Clasmeier
-category:            Data
+category:            Security
 build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.10
