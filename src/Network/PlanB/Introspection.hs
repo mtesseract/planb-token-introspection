@@ -1,7 +1,7 @@
 module Network.PlanB.Introspection
   ( TokenInfo(..)
   , Conf
-  , PlanBIntrospectionException
+  , IntrospectionException(..)
   , new
   , newFromEnv
   , newCustom
