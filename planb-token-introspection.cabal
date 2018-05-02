@@ -1,5 +1,5 @@
 name:                planb-token-introspection
-version:             0.1.0.0
+version:             0.1.1.0
 synopsis:            Token Introspection for PlanB
 description:         This package provides token introspection functionality
                      for the PlanB token provider.
