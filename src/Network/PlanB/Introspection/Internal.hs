@@ -5,7 +5,7 @@
 module Network.PlanB.Introspection.Internal
   ( TokenInfo(..)
   , Conf
-  , PlanBIntrospectionException
+  , IntrospectionException(..)
   , new
   , newFromEnv
   , newCustom
@@ -65,7 +65,7 @@ newFromEnv = do
       BackendEnv { .. } = backendEnv backend
   endpoint <- envLookup "PLANB_INTROSPECTION_ENDPOINT" >>= \ case
     Just ep -> pure ep
-    Nothing -> throwM PlanBIntrospectionEndpointMissing
+    Nothing -> throwM IntrospectionEndpointMissing
   newCustom backend endpoint
 
 newCustom
@@ -122,14 +122,14 @@ introspectTokenImpl conf token = do
     Right tokenInfo ->
       pure tokenInfo
     Left errMsg ->
-      throwM $ PlanBIntrospectionDeserialization (Text.pack errMsg) body
+      throwM $ IntrospectionDeserialization (Text.pack errMsg) body
 
 bodyToPlanBException
-  :: ByteString -> PlanBIntrospectionException
+  :: ByteString -> IntrospectionException
 bodyToPlanBException bytes =
   case eitherDecodeStrict bytes of
     Right err ->
-      PlanBIntrospectionError err
+      IntrospectionError err
     Left errMsgStr  ->
       let errMsg = Text.pack errMsgStr
-      in PlanBIntrospectionDeserialization errMsg bytes
+      in IntrospectionDeserialization errMsg bytes

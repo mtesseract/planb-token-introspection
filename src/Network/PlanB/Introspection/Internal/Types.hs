@@ -56,9 +56,9 @@ data PlanBError = PlanBError
 
 $(deriveJSON (aesonDrop (length ("oauth2" :: String)) snakeCase) ''PlanBError)
 
-data PlanBIntrospectionException = PlanBIntrospectionDeserialization Text ByteString
-                                 | PlanBIntrospectionError PlanBError
-                                 | PlanBIntrospectionEndpointMissing
+data IntrospectionException = IntrospectionDeserialization Text ByteString
+                            | IntrospectionError PlanBError
+                            | IntrospectionEndpointMissing
   deriving (Typeable, Show)
 
-instance Exception PlanBIntrospectionException
+instance Exception IntrospectionException
