@@ -18,7 +18,7 @@ environment variable `PLANB_INTROSPECTION_ENDPOINT`, then one can
 alternatively use
 
 ```haskell
-  introspector <- PlanB.newFromEnv
+  introspector <- PlanB.newFromEnv Nothing
 ```
 
 for creating the PlanB introspector.

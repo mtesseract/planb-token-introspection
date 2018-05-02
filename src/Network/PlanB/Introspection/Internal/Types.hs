@@ -17,8 +17,11 @@ import           Network.HTTP.Client
 
 type LazyByteString = ByteString.Lazy.ByteString
 
+-- | A 'TokenIntrospector' can be used for introspecting tokens.
 data TokenIntrospector m =
-  TokenIntrospector { introspectToken :: ByteString -> m TokenInfo }
+  TokenIntrospector
+  { introspectToken :: ByteString -> m TokenInfo -- ^ Introspect the provided token
+  }
 
 data TokenInfo =
   TokenInfo { tokenInfoExpiresIn :: Int

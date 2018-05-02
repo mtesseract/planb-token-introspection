@@ -7,8 +7,9 @@ module Network.PlanB.Introspection.Internal
   , Conf
   , IntrospectionException(..)
   , new
+  , newWithManager
   , newFromEnv
-  , newCustom
+  , newWithBackend
   , httpRequestExecuteIO
   , introspectToken
   ) where
@@ -35,12 +36,23 @@ import           Network.PlanB.Introspection.Internal.Types
 new :: (MonadThrow m, MonadIO m)
     => Text
     -> m (TokenIntrospector m)
-new endpoint = do
-  conf <- newConf backendIO endpoint
+new = newWithManager Nothing
+
+-- | Create a new PlanB introspector using the provided endpoint and
+-- manager.
+newWithManager :: (MonadThrow m, MonadIO m)
+               => Maybe Manager
+               -> Text
+               -> m (TokenIntrospector m)
+newWithManager maybeManager endpoint = do
+  conf <- newConf (backendIO maybeManager) endpoint
   pure $ TokenIntrospector { introspectToken = introspectTokenImpl conf }
-backendIO :: MonadIO m => Backend m
-backendIO =
-  Backend { backendHttp = httpBackendIO
+
+backendIO :: MonadIO m
+          => Maybe Manager
+          -> Backend m
+backendIO maybeManager =
+  Backend { backendHttp = httpBackendIO maybeManager
           , backendEnv  = envBackendIO }
 
 envBackendIO :: MonadIO m => BackendEnv m
@@ -54,26 +66,33 @@ envLookupIO =
   >>> fmap (fmap Text.pack)
   >>> liftIO
 
-httpBackendIO :: MonadIO m => BackendHttp m
-httpBackendIO =
-  BackendHttp { httpRequestExecute = httpRequestExecuteIO Nothing }
+httpBackendIO :: MonadIO m
+              => Maybe Manager
+              -> BackendHttp m
+httpBackendIO maybeManager =
+  BackendHttp { httpRequestExecute = httpRequestExecuteIO maybeManager }
 
+-- | Convenience function. Create a new PlanB introspector using the
+-- provided manager. The PlanB server to use is retrieved from the
+-- environment variable @PLANB_INTROSPECTION_ENDPOINT@.
 newFromEnv :: (MonadThrow m, MonadIO m)
-           => m (TokenIntrospector m)
-newFromEnv = do
-  let backend    = backendIO
+           => Maybe Manager
+           -> m (TokenIntrospector m)
+newFromEnv maybeManager = do
+  let backend = backendIO maybeManager
       BackendEnv { .. } = backendEnv backend
   endpoint <- envLookup "PLANB_INTROSPECTION_ENDPOINT" >>= \ case
     Just ep -> pure ep
     Nothing -> throwM IntrospectionEndpointMissing
-  newCustom backend endpoint
+  newWithBackend backend endpoint
 
-newCustom
+-- | Create a new PlanB introspector using the provided backend and endpoint.
+newWithBackend
   :: (MonadThrow m, MonadIO m)
   => Backend m
   -> Text
   -> m (TokenIntrospector m)
-newCustom backend introspectionEndpoint = do
+newWithBackend backend introspectionEndpoint = do
   conf <- newConf backend introspectionEndpoint
   pure $ TokenIntrospector { introspectToken = introspectTokenImpl conf }
 

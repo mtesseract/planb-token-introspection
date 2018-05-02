@@ -3,8 +3,9 @@ module Network.PlanB.Introspection
   , Conf
   , IntrospectionException(..)
   , new
+  , newWithManager
   , newFromEnv
-  , newCustom
+  , newWithBackend
   , httpRequestExecuteIO
   , introspectToken
   ) where

@@ -103,4 +103,4 @@ mockBackend = Backend
 
 makeTestIntrospector :: TestStack (TokenIntrospector TestStack)
 makeTestIntrospector =
-  newCustom mockBackend "https://localhost"
+  newWithBackend mockBackend "https://localhost"
