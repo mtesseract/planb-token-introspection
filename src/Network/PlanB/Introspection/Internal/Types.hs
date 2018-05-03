@@ -50,17 +50,17 @@ data Conf m = Conf
   , confBackend              :: Backend m }
 
 -- | Type for RFC7807 @Problem@ objects.
-data PlanBError = PlanBError
-  { oauth2Error            :: Text
-  , oauth2ErrorDescription :: Maybe Text
-  , oauth2ErrorURI         :: Maybe Text
-  , oauth2ErrorState       :: Maybe Text
+data Problem = Problem
+  { problemError            :: Text
+  , problemErrorDescription :: Maybe Text
+  , problemErrorURI         :: Maybe Text
+  , problemErrorState       :: Maybe Text
   } deriving (Show, Eq, Generic)
 
-$(deriveJSON (aesonDrop (length ("oauth2" :: String)) snakeCase) ''PlanBError)
+$(deriveJSON (aesonDrop (length ("problem" :: String)) snakeCase) ''Problem)
 
 data IntrospectionException = IntrospectionDeserialization Text ByteString
-                            | IntrospectionError PlanBError
+                            | IntrospectionError Problem
                             | IntrospectionEndpointMissing
   deriving (Typeable, Show)
 

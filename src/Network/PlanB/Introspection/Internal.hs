@@ -6,6 +6,7 @@ module Network.PlanB.Introspection.Internal
   ( TokenInfo(..)
   , Conf
   , IntrospectionException(..)
+  , Problem(..)
   , new
   , newWithManager
   , newFromEnv
