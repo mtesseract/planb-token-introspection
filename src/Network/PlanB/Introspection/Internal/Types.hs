@@ -49,19 +49,18 @@ data Conf m = Conf
   { confIntrospectionRequest :: Request
   , confBackend              :: Backend m }
 
--- | Type for RFC7807 @Problem@ objects.
-data Problem = Problem
-  { problemError            :: Text
-  , problemErrorDescription :: Maybe Text
-  , problemErrorURI         :: Maybe Text
-  , problemErrorState       :: Maybe Text
+data ErrorResponse = ErrorResponse
+  { errorResponseError            :: Text
+  , errorResponseErrorDescription :: Maybe Text
   } deriving (Show, Eq, Generic)
 
-$(deriveJSON (aesonDrop (length ("problem" :: String)) snakeCase) ''Problem)
+$(deriveJSON (aesonDrop (length ("errorResponse" :: String)) snakeCase) ''ErrorResponse)
 
-data IntrospectionException = IntrospectionDeserialization Text ByteString
-                            | IntrospectionError Problem
-                            | IntrospectionEndpointMissing
+data IntrospectionException = DeserializationFailure Text ByteString
+                            | InvalidRequest ErrorResponse
+                            | InvalidToken ErrorResponse
+                            | Other ErrorResponse
+                            | NoEndpoint
   deriving (Typeable, Show)
 
 instance Exception IntrospectionException

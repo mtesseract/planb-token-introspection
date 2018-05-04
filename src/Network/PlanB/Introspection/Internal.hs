@@ -6,7 +6,7 @@ module Network.PlanB.Introspection.Internal
   ( TokenInfo(..)
   , Conf
   , IntrospectionException(..)
-  , Problem(..)
+  , ErrorResponse(..)
   , new
   , newWithManager
   , newFromEnv
@@ -82,7 +82,7 @@ newFromEnv maybeManager = do
       BackendEnv { .. } = backendEnv backend
   endpoint <- envLookup "PLANB_INTROSPECTION_ENDPOINT" >>= \ case
     Just ep -> pure ep
-    Nothing -> throwM IntrospectionEndpointMissing
+    Nothing -> throwM NoEndpoint
   newWithBackend backend endpoint
 
 -- | Create a new PlanB introspector using the provided backend and endpoint.
@@ -137,7 +137,7 @@ introspectTokenImpl conf token = do
     Right tokenInfo ->
       pure tokenInfo
     Left errMsg ->
-      throwM $ IntrospectionDeserialization (Text.pack errMsg) body
+      throwM $ DeserializationFailure (Text.pack errMsg) body
 
   where backend = conf & confBackend
         BackendHttp { .. } = backend & backendHttp
@@ -146,8 +146,11 @@ bodyToPlanBException
   :: ByteString -> IntrospectionException
 bodyToPlanBException bytes =
   case eitherDecodeStrict bytes of
-    Right err ->
-      IntrospectionError err
+    Right err @ ErrorResponse { .. } ->
+      case errorResponseError of
+        "invalid_token"   -> InvalidToken err
+        "invalid_request" -> InvalidRequest err
+        _                 -> Other err
     Left errMsgStr  ->
       let errMsg = Text.pack errMsgStr
-      in IntrospectionDeserialization errMsg bytes
+      in DeserializationFailure errMsg bytes

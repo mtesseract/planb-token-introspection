@@ -2,7 +2,7 @@ module Network.PlanB.Introspection
   ( TokenInfo(..)
   , Conf
   , IntrospectionException(..)
-  , Problem(..)
+  , ErrorResponse(..)
   , new
   , newWithManager
   , newFromEnv
