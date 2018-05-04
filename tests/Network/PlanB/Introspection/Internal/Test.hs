@@ -48,7 +48,7 @@ testDeserializationFailure = do
                   , _testStateEnvironment = Map.empty
                   }
       tokenName = "some-token-name"
-  Left (PlanB.IntrospectionDeserialization _ _) <- try $ runTestStack testState $ do
+  Left (PlanB.DeserializationFailure _ _) <- try $ runTestStack testState $ do
     introspector <- makeTestIntrospector
     void $ introspectToken introspector tokenName
   pure ()
