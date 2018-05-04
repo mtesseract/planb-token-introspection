@@ -6,6 +6,7 @@ module Network.PlanB.Introspection.Internal
   ( TokenInfo(..)
   , Conf
   , IntrospectionException(..)
+  , Problem(..)
   , new
   , newWithManager
   , newFromEnv
@@ -36,17 +37,15 @@ import           Network.PlanB.Introspection.Internal.Types
 new :: (MonadThrow m, MonadIO m)
     => Text
     -> m (TokenIntrospector m)
-new = newWithManager Nothing
+new = newWithBackend (backendIO Nothing)
 
 -- | Create a new PlanB introspector using the provided endpoint and
 -- manager.
 newWithManager :: (MonadThrow m, MonadIO m)
-               => Maybe Manager
+               => Manager
                -> Text
                -> m (TokenIntrospector m)
-newWithManager maybeManager endpoint = do
-  conf <- newConf (backendIO maybeManager) endpoint
-  pure $ TokenIntrospector { introspectToken = introspectTokenImpl conf }
+newWithManager manager = newWithBackend (backendIO (Just manager))
 
 backendIO :: MonadIO m
           => Maybe Manager
@@ -128,10 +127,7 @@ introspectTokenImpl conf token = do
       request     = endpoint { method         = "GET"
                              , path           = "/oauth2/tokeninfo"
                              , requestHeaders = [("Authorization", bearerToken)] }
-      httpBackend = conf
-                    & confBackend
-                    & backendHttp
-  response <- httpRequestExecute httpBackend request
+  response <- httpRequestExecute request
   let body = responseBody response & ByteString.Lazy.toStrict
 
   when (statusCode (responseStatus response) /= 200) $
@@ -142,6 +138,9 @@ introspectTokenImpl conf token = do
       pure tokenInfo
     Left errMsg ->
       throwM $ IntrospectionDeserialization (Text.pack errMsg) body
+
+  where backend = conf & confBackend
+        BackendHttp { .. } = backend & backendHttp
 
 bodyToPlanBException
   :: ByteString -> IntrospectionException
