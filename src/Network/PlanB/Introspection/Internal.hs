@@ -7,12 +7,15 @@ module Network.PlanB.Introspection.Internal
   , Conf
   , IntrospectionException(..)
   , ErrorResponse(..)
+  , TokenIntrospector(..)
+  , Backend(..)
+  , BackendEnv(..)
+  , BackendHttp(..)
   , new
   , newWithManager
   , newFromEnv
   , newWithBackend
-  , httpRequestExecuteIO
-  , introspectToken
+  , backendIO
   ) where
 
 import           Control.Arrow
@@ -33,22 +36,23 @@ import qualified System.Environment                         as Env
 
 import           Network.PlanB.Introspection.Internal.Types
 
--- | Create a new PlanB introspector using the provided endpoint.
+-- | Create a new PlanB token introspector using the provided endpoint. Uses a global default HTTP manager.
 new :: (MonadThrow m, MonadIO m)
     => Text
     -> m (TokenIntrospector m)
 new = newWithBackend (backendIO Nothing)
 
--- | Create a new PlanB introspector using the provided endpoint and
--- manager.
+-- | Create a new PlanB toke introspector using the provided endpoint and
+-- HTTP manager.
 newWithManager :: (MonadThrow m, MonadIO m)
                => Manager
                -> Text
                -> m (TokenIntrospector m)
 newWithManager manager = newWithBackend (backendIO (Just manager))
 
+-- | Produces the default IO backend.
 backendIO :: MonadIO m
-          => Maybe Manager
+          => Maybe Manager -- ^ Use global default HTTP manager if 'Nothing'.
           -> Backend m
 backendIO maybeManager =
   Backend { backendHttp = httpBackendIO maybeManager
@@ -85,7 +89,7 @@ newFromEnv maybeManager = do
     Nothing -> throwM NoEndpoint
   newWithBackend backend endpoint
 
--- | Create a new PlanB introspector using the provided backend and endpoint.
+-- | Create a new PlanB token introspector using the provided backend and endpoint.
 newWithBackend
   :: (MonadThrow m, MonadIO m)
   => Backend m
