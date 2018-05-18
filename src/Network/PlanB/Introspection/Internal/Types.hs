@@ -23,6 +23,7 @@ data TokenIntrospector m =
   { introspectToken :: ByteString -> m TokenInfo -- ^ Introspect the provided token.
   }
 
+-- | Information returned on a successful token introspection.
 data TokenInfo =
   TokenInfo { tokenInfoExpiresIn :: Int
             , tokenInfoScope     :: Set Text
@@ -50,6 +51,7 @@ data Conf m = Conf
   { confIntrospectionRequest :: Request
   , confBackend              :: Backend m }
 
+-- | Contains the error response data returned from a PlanB server in case of an introspection error.
 data ErrorResponse = ErrorResponse
   { errorResponseError            :: Text
   , errorResponseErrorDescription :: Maybe Text
@@ -57,11 +59,13 @@ data ErrorResponse = ErrorResponse
 
 $(deriveJSON (aesonDrop (length ("errorResponse" :: String)) snakeCase) ''ErrorResponse)
 
-data IntrospectionException = DeserializationFailure Text ByteString
-                            | InvalidRequest ErrorResponse
-                            | InvalidToken ErrorResponse
-                            | Other ErrorResponse
-                            | NoEndpoint
-  deriving (Typeable, Show)
+-- | This type models the error scenarios specific to a token introspection attempt. These can be used
+-- as exceptions and are in fact thrown by a PlanB token introspector.
+data IntrospectionError = DeserializationFailure Text ByteString
+                        | InvalidRequest ErrorResponse
+                        | InvalidToken ErrorResponse
+                        | Other ErrorResponse
+                        | NoEndpoint
+  deriving (Typeable, Show, Eq, Generic)
 
-instance Exception IntrospectionException
+instance Exception IntrospectionError

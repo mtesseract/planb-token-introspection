@@ -1,6 +1,6 @@
 module Network.PlanB.Introspection
   ( TokenInfo(..)
-  , IntrospectionException(..)
+  , IntrospectionError(..)
   , ErrorResponse(..)
   , TokenIntrospector(..)
   , new
