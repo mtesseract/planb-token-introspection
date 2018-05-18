@@ -8,10 +8,10 @@ module Network.PlanB.Introspection.Internal.Types where
 import           Control.Exception.Safe
 import           Data.Aeson.Casing
 import           Data.Aeson.TH
-import           Data.ByteString        (ByteString)
-import qualified Data.ByteString.Lazy   as ByteString.Lazy
+import           Data.ByteString                ( ByteString )
+import qualified Data.ByteString.Lazy          as ByteString.Lazy
 import           Data.Set
-import           Data.Text              (Text)
+import           Data.Text                      ( Text )
 import           GHC.Generics
 import           Network.HTTP.Client
 
@@ -20,7 +20,7 @@ type LazyByteString = ByteString.Lazy.ByteString
 -- | A 'TokenIntrospector' can be used for introspecting tokens.
 data TokenIntrospector m =
   TokenIntrospector
-  { introspectToken :: ByteString -> m TokenInfo -- ^ Introspect the provided token
+  { introspectToken :: ByteString -> m TokenInfo -- ^ Introspect the provided token.
   }
 
 data TokenInfo =
@@ -40,6 +40,7 @@ data BackendEnv m = BackendEnv
   { envLookup :: Text -> m (Maybe Text)
   }
 
+-- | Type for backends for the PlanB token introspector.
 data Backend m = Backend
   { backendHttp :: BackendHttp m
   , backendEnv  :: BackendEnv m

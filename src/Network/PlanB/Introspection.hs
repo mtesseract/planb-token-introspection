@@ -1,14 +1,12 @@
 module Network.PlanB.Introspection
   ( TokenInfo(..)
-  , Conf
   , IntrospectionException(..)
   , ErrorResponse(..)
+  , TokenIntrospector(..)
   , new
   , newWithManager
   , newFromEnv
-  , newWithBackend
-  , httpRequestExecuteIO
-  , introspectToken
-  ) where
+  )
+where
 
 import           Network.PlanB.Introspection.Internal
