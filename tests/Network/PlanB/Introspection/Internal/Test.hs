@@ -29,8 +29,31 @@ planBTokenIntrospectionTests =
         testIntrospectToken
     , testCase "Deserialization failure is converted to exception"
         testDeserializationFailure
+    , testCase "InvalidToken exception is thrown"
+        testInvalidToken
     ]
   ]
+
+testInvalidToken :: Assertion
+testInvalidToken = do
+  let rspBody = ByteString.Lazy.fromStrict . Text.encodeUtf8 $
+        [fmt|{"error":"invalid_token","error_description":"Access Token not valid"}|]
+      response = Response { responseStatus    = status401
+                          , responseVersion   = http20
+                          , responseHeaders   = []
+                          , responseBody      = rspBody
+                          , responseCookieJar = CJ []
+                          , responseClose'    = ResponseClose (pure ())
+                          }
+      testState = TestState
+                  { _testStateHttpResponse = Just response
+                  , _testStateHttpRequests = []
+                  , _testStateEnvironment = Map.empty
+                  }
+  Left (PlanB.InvalidToken _) <- try $ runTestStack testState $ do
+    introspector <- makeTestIntrospector
+    void $ introspectToken introspector "some-token"
+  pure ()
 
 testDeserializationFailure :: Assertion
 testDeserializationFailure = do
@@ -47,10 +70,9 @@ testDeserializationFailure = do
                   , _testStateHttpRequests = []
                   , _testStateEnvironment = Map.empty
                   }
-      tokenName = "some-token-name"
   Left (PlanB.DeserializationFailure _ _) <- try $ runTestStack testState $ do
     introspector <- makeTestIntrospector
-    void $ introspectToken introspector tokenName
+    void $ introspectToken introspector "some-token"
   pure ()
 
 testIntrospectToken :: Assertion
