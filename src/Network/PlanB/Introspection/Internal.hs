@@ -5,7 +5,7 @@
 module Network.PlanB.Introspection.Internal
   ( TokenInfo(..)
   , Conf
-  , IntrospectionException(..)
+  , IntrospectionError(..)
   , ErrorResponse(..)
   , TokenIntrospector(..)
   , Backend(..)
@@ -147,7 +147,7 @@ introspectTokenImpl conf token = do
         BackendHttp { .. } = backend & backendHttp
 
 bodyToPlanBException
-  :: ByteString -> IntrospectionException
+  :: ByteString -> IntrospectionError
 bodyToPlanBException bytes =
   case eitherDecodeStrict bytes of
     Right err @ ErrorResponse { .. } ->
