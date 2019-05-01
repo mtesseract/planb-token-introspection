@@ -116,7 +116,6 @@ httpRequestExecuteIO
   -> Request
   -> m (Response LazyByteString)
 httpRequestExecuteIO maybeManager request = do
-  liftIO $ print request
   manager <- maybe (liftIO getGlobalManager) pure maybeManager
   liftIO $ httpLbs request manager
 
