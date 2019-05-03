@@ -1,4 +1,3 @@
 resolver: lts-13.19
 packages:
 - .
-extra-deps: [th-format-0.1.2.0]

@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes       #-}
 
 module Network.PlanB.Introspection.Internal.Test
   ( planBTokenIntrospectionTests
@@ -9,7 +8,6 @@ import           Control.Exception.Safe
 import           Control.Monad
 import           Data.ByteString                  (ByteString)
 import qualified Data.ByteString.Lazy             as ByteString.Lazy
-import           Data.Format
 import qualified Data.Map                         as Map
 import qualified Data.Text.Encoding               as Text
 import           Network.HTTP.Client.Internal
@@ -37,7 +35,7 @@ planBTokenIntrospectionTests =
 testInvalidToken :: Assertion
 testInvalidToken = do
   let rspBody = ByteString.Lazy.fromStrict . Text.encodeUtf8 $
-        [fmt|{"error":"invalid_token","error_description":"Access Token not valid"}|]
+        "{\"error\":\"invalid_token\",\"error_description\":\"Access Token not valid\"}"
       response = Response { responseStatus    = status401
                           , responseVersion   = http20
                           , responseHeaders   = []
@@ -77,17 +75,18 @@ testDeserializationFailure = do
 
 testIntrospectToken :: Assertion
 testIntrospectToken = do
-  let rspBody = ByteString.Lazy.fromStrict . Text.encodeUtf8 $ [fmt|
-        { "access_token": "some-token",
-          "client_id":    "test-suite",
-          "cn":           "some-username",
-          "expires_in":   3591,
-          "grant_type":   "password",
-          "realm":        "/employees",
-          "scope":        ["uid"],
-          "token_type":   "Bearer",
-          "uid":          "some-user-name" }
-          |]
+  let rspBody = ByteString.Lazy.fromStrict . Text.encodeUtf8 $
+        "{ \
+        \  \"access_token\": \"some-token\", \
+        \  \"client_id\":    \"test-suite\", \
+        \  \"cn\":           \"some-username\", \
+        \  \"expires_in\":   3591, \
+        \  \"grant_type\":   \"password\", \
+        \  \"realm\":        \"/employees\", \
+        \  \"scope\":        [\"uid\"], \
+        \  \"token_type\":   \"Bearer\", \
+        \  \"uid\":          \"some-user-name\" \
+        \}"
       response = Response { responseStatus    = ok200
                           , responseVersion   = http20
                           , responseHeaders   = []
